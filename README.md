@@ -1,4 +1,4 @@
-# stravalook
+# stravaplunge
 Plumbing the depths of my Strava Data
 
 Data export in csv --> Pandas --> Plotly --> Streamlit
