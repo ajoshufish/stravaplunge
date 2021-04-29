@@ -8,7 +8,7 @@ import plotly_express as px
 import gspread
 
 st.set_page_config(layout='wide')
-st.title('Strava Data Analysis -- one user: me!')
+st.title('Strava Aggregated Data Analysis -- one user: me!')
 
 #setup data load config based on streamlit secrets
 credentials = {
@@ -48,28 +48,37 @@ df['Elevation_Gain'] = pd.to_numeric(df['Elevation_Gain'])
 df['Relative_Effort'] = pd.to_numeric(df['Relative_Effort'])
 df['Average_Heart_Rate'] = pd.to_numeric(df['Average_Heart_Rate'])
 df['Average_Cadence'] = pd.to_numeric(df['Average_Cadence'])
-df['Average_Speed'] = df['Distance']/df['Elapsed_Time']
+df['Elapsed_Time'] = df['Elapsed_Time'] /60 #convert s to min
+df['Average_Speed'] = df['Distance']/df['Elapsed_Time'] #fill in blanks
+df['Distance'] = df['Distance'] / 1000 #convert m to km
+df['Pace'] = df['Elapsed_Time']/df['Distance'] #min/km
 
-#st.write(df.dtypes)
+st.write(df.dtypes)
 
 
 #Option Selection
-startDay = st.sidebar.slider('Start Date', value=datetime(2020, 2, 1),format="MM/DD/YY", min_value=datetime(2020, 2, 1), max_value=datetime(2021, 2, 1))
-endDay = st.sidebar.slider('End Date', value=datetime(2021, 1, 30),format="MM/DD/YY", min_value=datetime(2020, 2, 2), max_value=datetime(2021, 2, 1) )
+startDay = st.sidebar.slider('Start Date', value=datetime(2020, 3, 12),format="MM/DD/YY", min_value=datetime(2020, 3, 12), max_value=datetime(2021, 2, 1))
+endDay = st.sidebar.slider('End Date', value=datetime(2021, 1, 30),format="MM/DD/YY", min_value=datetime(2020, 3, 13), max_value=datetime(2021, 2, 1) )
 
 #We can switch to these to give us the full range of activities
 #startDay = st.sidebar.slider('Start Date', value=datetime(2020, 2, 1),format="MM/DD/YY", min_value=df.head(1)['Activity_Date'].iloc[0].to_pydatetime(), max_value=df.tail(1)['Activity_Date'].iloc[0].to_pydatetime())
 #endDay = st.sidebar.slider('End Date', value=datetime(2021, 1, 30),format="MM/DD/YY", min_value=df.head(1)['Activity_Date'].iloc[0].to_pydatetime(), max_value=df.tail(1)['Activity_Date'].iloc[0].to_pydatetime() )
 
-#unitChoice = st.sidebar.radio('Units', ['Imperial','Metric'])  #strava backend is metric so at some point we'll need to convert stuff
+unitChoice = st.sidebar.radio('Units', ['Imperial','Metric'])  #strava backend is metric so at some point we'll need to convert stuff
 
 #Apply our options
 filt = df[(df.Activity_Date >= startDay) & (df.Activity_Date <= endDay) & (df.Activity_Type == 'Run')]
 filt.sort_values(by='Activity_Date')
-#st.dataframe(filt)
+if unitChoice == 'Imperial':
+    filt['Distance'] = .621371 * filt['Distance'] #km to mi
+    filt['Pace'] = 1.60934449789 * filt['Pace'] #min/km to min/mi
+    filt['Elevation_Gain'] = 3.28084 * filt['Elevation_Gain']
+
+
+st.dataframe(filt)
 
 #Collect together options for our line graph
-optDict = {'Avg. Cadence':'Average_Cadence','Avg. HR':'Average_Heart_Rate', 'Avg. Pace':'Average_Speed', 'Dist':'Distance', 'Vert':'Elevation_Gain', 'Rel. Effort':'Relative_Effort'}
+optDict = {'Avg. Cadence':'Average_Cadence','Avg. HR':'Average_Heart_Rate', 'Avg. Pace':'Pace', 'Dist':'Distance', 'Vert':'Elevation_Gain', 'Rel. Effort':'Relative_Effort'}
 chartOptions = st.multiselect('What are we looking at?', ['Avg. HR', 'Avg. Pace', 'Dist', 'Vert', 'Rel. Effort', 'Avg. Cadence'], default =['Dist','Avg. Pace'])
 
 #convert them to df column labels
@@ -83,7 +92,7 @@ for i in chartOptions:
 def makeChart():
     fig = make_subplots(specs=[[{"secondary_y": True}]])
     for i in enumerate(chartOptions):
-        if i[1] == 'Vert':
+        if (i[1] == 'Vert') or (i[1] == 'Avg. HR'):
             fig.add_trace(go.Scatter(name=i[1], y=filt[optDict[i[1]]], x=filt['Activity_Date']), secondary_y=False)
         else:
             fig.add_trace(go.Scatter(name=i[1], y=filt[optDict[i[1]]], x=filt['Activity_Date']), secondary_y=True)
