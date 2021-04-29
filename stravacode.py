@@ -53,7 +53,7 @@ df['Average_Speed'] = df['Distance']/df['Elapsed_Time'] #fill in blanks
 df['Distance'] = df['Distance'] / 1000 #convert m to km
 df['Pace'] = df['Elapsed_Time']/df['Distance'] #min/km
 
-st.write(df.dtypes)
+#st.write(df.dtypes)
 
 
 #Option Selection
@@ -75,7 +75,7 @@ if unitChoice == 'Imperial':
     filt['Elevation_Gain'] = 3.28084 * filt['Elevation_Gain']
 
 
-st.dataframe(filt)
+#st.dataframe(filt)
 
 #Collect together options for our line graph
 optDict = {'Avg. Cadence':'Average_Cadence','Avg. HR':'Average_Heart_Rate', 'Avg. Pace':'Pace', 'Dist':'Distance', 'Vert':'Elevation_Gain', 'Rel. Effort':'Relative_Effort'}
