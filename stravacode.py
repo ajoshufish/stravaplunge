@@ -50,7 +50,7 @@ df['Average_Heart_Rate'] = pd.to_numeric(df['Average_Heart_Rate'])
 df['Average_Cadence'] = pd.to_numeric(df['Average_Cadence'])
 df['Average_Speed'] = df['Distance']/df['Elapsed_Time']
 
-st.write(df.dtypes)
+#st.write(df.dtypes)
 
 
 #Option Selection
@@ -66,7 +66,7 @@ endDay = st.sidebar.slider('End Date', value=datetime(2021, 1, 30),format="MM/DD
 #Apply our options
 filt = df[(df.Activity_Date >= startDay) & (df.Activity_Date <= endDay) & (df.Activity_Type == 'Run')]
 filt.sort_values(by='Activity_Date')
-st.dataframe(filt)
+#st.dataframe(filt)
 
 #Collect together options for our line graph
 optDict = {'Avg. Cadence':'Average_Cadence','Avg. HR':'Average_Heart_Rate', 'Avg. Pace':'Average_Speed', 'Dist':'Distance', 'Vert':'Elevation_Gain', 'Rel. Effort':'Relative_Effort'}
