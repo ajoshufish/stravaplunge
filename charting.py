@@ -10,7 +10,7 @@ import plotly_express as px
 #build out individual lines based on selected options
 #amazing tds post for the px and go mixing to get the nonlinear trendlines I wanted:
 #https://towardsdatascience.com/time-series-and-logistic-regression-with-plotly-and-pandas-8b368e76b19f
-def makeChart(filt, chartOptions, optDict):
+def multiChart(filt, chartOptions, optDict):
     chartCats = ['Activity_Date']
     for i in chartOptions:
         chartCats.append(optDict[i])

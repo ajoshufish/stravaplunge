@@ -5,6 +5,9 @@ import os
 import gspread
 st.set_page_config(layout='wide')
 import charting
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go 
+import plotly_express as px
 
 st.title('Strava Aggregated Data Analysis -- one user: me!')
 
@@ -76,4 +79,36 @@ optDict = {'Avg. Cadence':'Average_Cadence','Avg. HR':'Average_Heart_Rate', 'Avg
 chartOptions = st.multiselect('What are we looking at?', ['Avg. HR', 'Avg. Pace', 'Dist', 'Vert', 'Rel. Effort', 'Avg. Cadence'], default =['Dist','Avg. Pace'])
 
 #call our chart, passing in options
-charting.makeChart(filt, chartOptions, optDict)
+charting.multiChart(filt, chartOptions, optDict)
+
+col1, col2 = st.beta_columns(2)
+
+#build pace vs. distance
+fig = make_subplots()
+fig.add_trace(go.Scatter(name='', y=filt['Pace'], x=filt['Distance'], mode='markers', hovertemplate='%{x:.1f} mi at %{y:.1f} min/mi<br>On: %{text}', text=filt['Activity_Date'].dt.strftime('%b %d, %Y')  ))
+
+trend_fig = px.scatter(filt, x=filt['Distance'], y=filt['Pace'], trendline="lowess")
+x_trend = trend_fig["data"][1]['x']
+y_trend = trend_fig["data"][1]['y']
+
+fig.add_trace(go.Scatter(x=x_trend, y=y_trend, name='Pace'+ ' trend', line = dict(width=4, dash='dash'), hovertemplate='Trend: %{y:.1f} min/mi for %{x:.1f} mi'))
+colorhelp = 'rgba(0,0,0,0)'
+fig.update_layout(xaxis_title="Distance (mi)", yaxis_title='Pace (min/mi)', yaxis=dict(showspikes=True, spikemode = 'marker+toaxis', spikesnap = 'cursor'), xaxis=dict(showspikes=True, spikemode = 'marker+toaxis', spikesnap = 'cursor'), margin_l=10, margin_r=10, margin_t=10, margin_b=10, hovermode='closest', showlegend=False, paper_bgcolor=colorhelp, plot_bgcolor=colorhelp)
+
+col1.text('For these data, how does distance translate to pace? \nAnything below the trend line beats the average (good!).')
+col1.plotly_chart(fig , use_container_width=True)
+
+#build pace vs. vert
+fig = make_subplots()
+fig.add_trace(go.Scatter(name='', y=filt['Pace'], x=filt['Elevation_Gain'], mode='markers', hovertemplate='%{x} ft at %{y:.1f} min/mi<br>On: %{text}', text=filt['Activity_Date'].dt.strftime('%b %d, %Y')  ))
+
+trend_fig = px.scatter(filt, x=filt['Elevation_Gain'], y=filt['Pace'], trendline="lowess")
+x_trend = trend_fig["data"][1]['x']
+y_trend = trend_fig["data"][1]['y']
+
+fig.add_trace(go.Scatter(x=x_trend, y=y_trend, name='Pace'+ ' trend', line = dict(width=4, dash='dash'), hovertemplate='Trend: %{y:.1f} min/mi for %{x} ft'))
+colorhelp = 'rgba(0,0,0,0)'
+fig.update_layout(xaxis_title="Vert (ft)", yaxis_title='Pace (min/mi)', yaxis=dict(showspikes=True, spikemode = 'marker+toaxis', spikesnap = 'cursor'), xaxis=dict(showspikes=True, spikemode = 'marker+toaxis', spikesnap = 'cursor'), margin_l=10, margin_r=10, margin_t=10, margin_b=10, hovermode='closest', showlegend=False, paper_bgcolor=colorhelp, plot_bgcolor=colorhelp)
+
+col2.text('For these data, how does elevation gain translate to pace? \nAnything below the trend line beats the average (good!).')
+col2.plotly_chart(fig , use_container_width=True)
