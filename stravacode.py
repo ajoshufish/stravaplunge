@@ -8,6 +8,8 @@ import charting
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go 
 import plotly_express as px
+import numpy.polynomial.polynomial as poly
+import numpy as np
 
 st.title('Strava Aggregated Data Analysis -- one user: me!')
 
@@ -38,6 +40,11 @@ data = load_dataset()
 headers = data.pop(0)
 df = pd.DataFrame(data, columns=headers)
 
+dimcols = ['Dimension', 'Name', 'Unit-I', 'Unit-M']
+dims = [['Distance', 'Dist', 'mi', 'km'], ['Pace', 'Pace', 'min/mi', 'min/km'], ['Elevation_Gain', 'Vert', 'ft', 'm'], 
+['Average_Heart_Rate', 'Avg. HR', 'bpm', 'bpm'], ['Relative_Effort', 'Rel. Effort', '', ''], ['Average_Cadence', 'Avg. Cadence', 'spm', 'spm']]
+dimensions = pd.DataFrame(data = dims, columns=dimcols)
+
 #tidy up column info
 df.columns = df.columns.str.replace(' ', '_')
 df = df.convert_dtypes()
@@ -53,9 +60,6 @@ df['Elapsed_Time'] = df['Elapsed_Time'] /60 #convert s to min
 df['Average_Speed'] = df['Distance']/df['Elapsed_Time'] #fill in blanks
 df['Distance'] = df['Distance'] / 1000 #convert m to km
 df['Pace'] = df['Elapsed_Time']/df['Distance'] #min/km
-
-#st.write(df.dtypes)
-
 
 #Option Selection
 startDay = st.sidebar.slider('Start Date', value=datetime(2020, 3, 12),format="MM/DD/YY", min_value=datetime(2020, 3, 12), max_value=datetime(2021, 2, 1))
@@ -81,34 +85,22 @@ chartOptions = st.multiselect('What are we looking at?', ['Avg. HR', 'Avg. Pace'
 #call our chart, passing in options
 charting.multiChart(filt, chartOptions, optDict)
 
+#now a couple of specific comparison charts
 col1, col2 = st.beta_columns(2)
 
-#build pace vs. distance
-fig = make_subplots()
-fig.add_trace(go.Scatter(name='', y=filt['Pace'], x=filt['Distance'], mode='markers', hovertemplate='%{x:.1f} mi at %{y:.1f} min/mi<br>On: %{text}', text=filt['Activity_Date'].dt.strftime('%b %d, %Y')  ))
+col1.text('Choose two dimensions to compare to each other:')
+compdims1 = col1.multiselect('What are we looking at?', ['Avg. HR', 'Pace', 'Dist', 'Vert', 'Rel. Effort', 'Avg. Cadence'], default =['Dist','Pace'], key='compCharts1')
+if len(compdims1) !=2:
+  col1.text('Choose precisely two options')
+else:
+  with col1: charting.buildComp(unitChoice, dimensions, filt, compdims1)
 
-trend_fig = px.scatter(filt, x=filt['Distance'], y=filt['Pace'], trendline="lowess")
-x_trend = trend_fig["data"][1]['x']
-y_trend = trend_fig["data"][1]['y']
 
-fig.add_trace(go.Scatter(x=x_trend, y=y_trend, name='Pace'+ ' trend', line = dict(width=4, dash='dash'), hovertemplate='Trend: %{y:.1f} min/mi for %{x:.1f} mi'))
-colorhelp = 'rgba(0,0,0,0)'
-fig.update_layout(xaxis_title="Distance (mi)", yaxis_title='Pace (min/mi)', yaxis=dict(showspikes=True, spikemode = 'marker+toaxis', spikesnap = 'cursor'), xaxis=dict(showspikes=True, spikemode = 'marker+toaxis', spikesnap = 'cursor'), margin_l=10, margin_r=10, margin_t=10, margin_b=10, hovermode='closest', showlegend=False, paper_bgcolor=colorhelp, plot_bgcolor=colorhelp)
-
-col1.text('For these data, how does distance translate to pace? \nAnything below the trend line beats the average (good!).')
-col1.plotly_chart(fig , use_container_width=True)
+col2.text('Choose two dimensions to compare to each other:')
+compdims2 = col2.multiselect('What are we looking at?', ['Avg. HR', 'Pace', 'Dist', 'Vert', 'Rel. Effort', 'Avg. Cadence'], default =['Vert','Pace'], key='compCharts2')
+if len(compdims2) !=2:
+  col2.text('Choose precisely two options')
+else:
+  with col2: charting.buildComp(unitChoice, dimensions, filt, compdims2)
 
 #build pace vs. vert
-fig = make_subplots()
-fig.add_trace(go.Scatter(name='', y=filt['Pace'], x=filt['Elevation_Gain'], mode='markers', hovertemplate='%{x} ft at %{y:.1f} min/mi<br>On: %{text}', text=filt['Activity_Date'].dt.strftime('%b %d, %Y')  ))
-
-trend_fig = px.scatter(filt, x=filt['Elevation_Gain'], y=filt['Pace'], trendline="lowess")
-x_trend = trend_fig["data"][1]['x']
-y_trend = trend_fig["data"][1]['y']
-
-fig.add_trace(go.Scatter(x=x_trend, y=y_trend, name='Pace'+ ' trend', line = dict(width=4, dash='dash'), hovertemplate='Trend: %{y:.1f} min/mi for %{x} ft'))
-colorhelp = 'rgba(0,0,0,0)'
-fig.update_layout(xaxis_title="Vert (ft)", yaxis_title='Pace (min/mi)', yaxis=dict(showspikes=True, spikemode = 'marker+toaxis', spikesnap = 'cursor'), xaxis=dict(showspikes=True, spikemode = 'marker+toaxis', spikesnap = 'cursor'), margin_l=10, margin_r=10, margin_t=10, margin_b=10, hovermode='closest', showlegend=False, paper_bgcolor=colorhelp, plot_bgcolor=colorhelp)
-
-col2.text('For these data, how does elevation gain translate to pace? \nAnything below the trend line beats the average (good!).')
-col2.plotly_chart(fig , use_container_width=True)

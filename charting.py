@@ -37,3 +37,30 @@ def multiChart(filt, chartOptions, optDict):
     else:
         st.text("Let's throw all those on a simple chart, shall we?")
         st.plotly_chart(fig , use_container_width=True)
+
+
+
+#build chart that compares two units over time
+def buildComp(unitChoice, diminfo, df, dims):
+    fig = make_subplots()
+    unit1 = diminfo[diminfo['Name'] == dims[0]]['Unit-I'].values[0] if unitChoice == 'Imperial' else diminfo[diminfo['Name'] == dims[0]]['Unit-M'].values[0]
+    unit2 = diminfo[diminfo['Name'] == dims[1]]['Unit-I'].values[0] if unitChoice == 'Imperial' else diminfo[diminfo['Name'] == dims[1]]['Unit-M'].values[0]
+    dim1 = diminfo[diminfo['Name'] == dims[0]]['Dimension'].values[0]
+    dim2 = diminfo[diminfo['Name'] == dims[1]]['Dimension'].values[0]
+
+
+    #hovertemplate='%{x:.1f} ' +hovUnit+' at %{y:.1f} min/'+hovUnit+'<br>On: %{text}', text=df['Activity_Date'].dt.strftime('%b %d, %Y')  ))
+    fig.add_trace(go.Scatter(name='', y=df[dim2], x=df[dim1], mode='markers', hovertemplate='%{x:.1f} '+unit1+' vs %{y:.1f} '+unit2+'<br>On: %{text}', text=df['Activity_Date'].dt.strftime('%b %d, %Y')  ))
+
+    #ud
+    trend_fig = px.scatter(df, x=df[dim1], y=df[dim2], trendline="lowess")
+    x_trend = trend_fig["data"][1]['x']
+    y_trend = trend_fig["data"][1]['y']
+
+    #ud
+    fig.add_trace(go.Scatter(x=x_trend, y=y_trend, name=dims[0]+ ' vs '+dims[1]+ ' trend', line = dict(width=4, dash='dash'), hovertemplate='Trend: %{x:.1f} '+unit1+ ' vs %{y:.1f} '+unit2))
+    colorhelp = 'rgba(0,0,0,0)'
+    
+    #ud
+    fig.update_layout(xaxis_title=dims[0], yaxis_title=dims[1], yaxis=dict(showspikes=True, spikemode = 'marker+toaxis', spikesnap = 'cursor'), xaxis=dict(showspikes=True, spikemode = 'marker+toaxis', spikesnap = 'cursor'), margin_l=10, margin_r=10, margin_t=10, margin_b=10, hovermode='closest', showlegend=False, paper_bgcolor=colorhelp, plot_bgcolor=colorhelp)
+    st.plotly_chart(fig , use_container_width=True)
